@@ -1,19 +1,17 @@
 import "./skills.css";
-import { useEffect, useState } from "react";
 
 function Skills() {
-  const [skills, setSkills] = useState([]);
-
-  useEffect(() => {
-    fetch("http://localhost:5000/api/skills")
-      .then((response) => response.json())
-      .then((data) => {
-        setSkills(data);
-      })
-      .catch((error) => {
-        console.log("Error fetching skills:", error);
-      });
-  }, []);
+  const skills = [
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "React",
+    "Node.js",
+    "Express.js",
+    "MySQL",
+    "Figma",
+    "Data Analytics"
+  ];
 
   return (
     <section className="skills" id="skills">
@@ -23,9 +21,9 @@ function Skills() {
       </div>
 
       <div className="skills-list">
-        {skills.map((skill) => (
-          <div className="skill-item" key={skill.id}>
-            {skill.name}
+        {skills.map((skill, index) => (
+          <div className="skill-item" key={index}>
+            {skill}
           </div>
         ))}
       </div>
