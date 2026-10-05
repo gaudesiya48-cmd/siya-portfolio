@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const db = require("./db");
 const nodemailer = require("nodemailer");
 
 require("dotenv").config();
@@ -14,23 +13,7 @@ app.get("/", (req, res) => {
   res.send("Portfolio Backend is running!");
 });
 
-app.get("/api/skills", (req, res) => {
-  const sql = "SELECT * FROM skills";
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.log(err);
-
-      return res.status(500).json({
-        message: "Failed to fetch skills",
-      });
-    }
-
-    res.json(results);
-  });
-});
-
-app.post("/api/contact", (req, res) => {
+app.post("/api/contact", async (req, res) => {
   const { name, email, message } = req.body;
 
   if (!name || !email || !message) {
@@ -39,22 +22,7 @@ app.post("/api/contact", (req, res) => {
     });
   }
 
-  // Save contact message in database
-  const sql = `
-    INSERT INTO contact_messages (name, email, message)
-    VALUES (?, ?, ?)
-  `;
-
-  db.query(sql, [name, email, message], (dbError, result) => {
-    if (dbError) {
-      console.log("Database error:", dbError);
-
-      return res.status(500).json({
-        message: "Failed to save message",
-      });
-    }
-
-    // Send email
+  try {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -67,7 +35,7 @@ app.post("/api/contact", (req, res) => {
       from: `Siya's Portfolio <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       replyTo: email,
-      subject: "Siya's Portfolio",
+      subject: "New Portfolio Enquiry",
       text: `
 Name: ${name}
 Email: ${email}
@@ -77,26 +45,24 @@ ${message}
       `,
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log("Email error:", error);
+    await transporter.sendMail(mailOptions);
 
-        return res.status(500).json({
-          message: "Message saved, but email could not be sent",
-        });
-      }
+    console.log("Email sent successfully");
 
-      console.log("Email sent:", info.response);
-
-      res.json({
-        message: "Message saved and email sent successfully",
-      });
+    res.json({
+      message: "Message sent successfully",
     });
-  });
+  } catch (error) {
+    console.log("Email error:", error);
+
+    res.status(500).json({
+      message: "Failed to send email",
+    });
+  }
 });
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
