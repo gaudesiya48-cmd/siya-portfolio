@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const nodemailer = require("nodemailer");
 
 require("dotenv").config();
 
@@ -23,32 +22,38 @@ app.post("/api/contact", async (req, res) => {
   }
 
   try {
-   const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-    const mailOptions = {
-      from: `Siya's Portfolio <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
-      replyTo: email,
-      subject: "New Portfolio Enquiry",
-      text: `
-Name: ${name}
-Email: ${email}
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: "onboarding@resend.dev",
+        to: ["gaudesiya48@gmail.com"],
+        reply_to: email,
+        subject: "New Portfolio Enquiry",
+        html: `
+          <h2>New Portfolio Enquiry</h2>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Message:</strong></p>
+          <p>${message}</p>
+        `,
+      }),
+    });
 
-Message:
-${message}
-      `,
-    };
+    const data = await response.json();
 
-    await transporter.sendMail(mailOptions);
+    if (!response.ok) {
+      console.log("Resend error:", data);
 
-    console.log("Email sent successfully");
+      return res.status(500).json({
+        message: "Failed to send email",
+      });
+    }
+
+    console.log("Email sent successfully:", data);
 
     res.json({
       message: "Message sent successfully",
